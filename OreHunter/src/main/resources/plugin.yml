@@ -1,0 +1,6 @@
+name: OreHunter
+version: '1.0-SNAPSHOT'
+main: plugin.orehunter.Main
+api-version: '1.21'
+commands:
+  oreHunter:
