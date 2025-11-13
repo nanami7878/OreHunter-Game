@@ -137,6 +137,9 @@ public class OreHunterCommand extends BaseCommand implements Listener {
       return;
     }
 
+    e.setDropItems(false);
+    e.setExpToDrop(0);
+
     executingPlayerList.stream()
         .filter(p -> p.getPlayerName().equals(player.getName()))
         .findFirst()
