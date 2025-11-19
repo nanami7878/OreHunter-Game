@@ -78,7 +78,54 @@ Minecraftプラグイン『OreHunter（鉱石採掘ミニゲーム）』に関�
 |ラピスラズリ鉱石|50 ポイント|
 |レッドストーン鉱石|30 ポイント|
 |鉄鉱石|10 ポイント|
-|石|-50 ポイント|
+|石|-50 ポイント|  
+<br/>
+
+## 🤖 データベースについて
+### ◇ データベースの接続方法
+１. ご自身のローカル環境でMySQLに接続してください。  
+２. 以下のSQLコマンドを順番に実行してください。  
+<br/>  
+
+① データベース作成
+```
+CREATE DATABASE orehunter_game;
+```  
+② データベース選択
+```
+USE orehunter_game;
+```
+③ テーブル作成（Mac か Windows どちらか一方を実行してください）  
+
+######  ＊　Macの場合
+```
+CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score int, registered_at datetime, primary key(id));
+```  
+######  ＊　Windowsの場合
+```
+CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score int, registered_at datetime, primary key(id)) DEFAULT CHARSET=utf8;
+```
+<br/>  
+３. MySQLの接続情報（ url , username , password ）は、ご自身のローカル環境に合わせて「 mybatis-config.xml 」に設定してください。  
+<br/>  
+<br/>  
+<br/>   
+
+### ◇ データベースの構成
+データベース名：orehunter_game  
+テーブル名　　：player_score  
+|カラム名|詳細|
+|---|---|
+|id|主キー（AUTO_INCREMENT）|
+|player_name|プレイヤー名|
+|score|ゲームでの獲得スコア|
+|registered_at|登録日時|  
+<br/>
+
+## ⚙️ 開発環境
+
+
+
 
 
  
