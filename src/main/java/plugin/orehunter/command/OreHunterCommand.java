@@ -30,8 +30,8 @@ import plugin.orehunter.mapper.data.PlayerScore;
 
 
 /**
- * 制限時間内に、ランダムで出現する鉱石を破壊して、高得点を目指すゲームを起動するコマンドです。
- * 点数は鉱石により異なり、破壊した鉱石の合計によってスコアが変動します。
+ * 制限時間内に、ランダムで出現する鉱石を採掘して、高得点を目指すゲームを起動するコマンドです。
+ * 点数は鉱石により異なり、採掘した鉱石の合計によってスコアが変動します。
  * 結果はプレイヤー名、点数、日時で保存されます。
  */
 
@@ -107,7 +107,7 @@ public class OreHunterCommand extends BaseCommand implements Listener {
 
   /**
    * プレイヤーが、出現した鉱石にダメージを与えた瞬間に呼ばれるメソッドです。
-   * 鉱石を一撃で破壊できるように設定します。
+   * 鉱石を一撃で破壊し採掘できるように設定します。
    * @param e　鉱石にダメージを与えた際のイベント情報
    */
   @EventHandler
@@ -177,7 +177,7 @@ public class OreHunterCommand extends BaseCommand implements Listener {
 
 
   /**
-   *ゲーム開始と同時にプレイヤーの初期状態を設定します。
+   * ゲーム開始と同時にプレイヤーの初期状態を設定します。
    * 体力と空腹値が最大になり、採掘道具(ツルハシ)が装備されます。
    * @param player コマンドを実行したプレイヤー
    */
@@ -221,7 +221,7 @@ public class OreHunterCommand extends BaseCommand implements Listener {
 
 
   /**
-   * ゲームが開始します。鉱石が出現し、制限時間内に破壊するとスコアが加算されます。
+   * ゲームが開始します。鉱石が出現し、制限時間内に採掘するとスコアが加算されます。
    * ゲーム終了５秒前からカウントダウンを開始します。
    * ゲーム終了後、スコア表示などの処理を行います。
    * @param player　コマンドを実行したプレイヤー
@@ -258,7 +258,7 @@ public class OreHunterCommand extends BaseCommand implements Listener {
     task.cancel();
     player.sendTitle("ゲーム終了！",
         nowExecutingPlayer.getPlayerName() + "合計 " + nowExecutingPlayer.getScore() + "点！",
-        0, 40, 20);
+        0, 140, 20);
 
 
     oreBlockList.forEach(oreBlock
