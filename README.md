@@ -30,10 +30,16 @@ Minecraftプラグイン『OreHunter（鉱石採掘ミニゲーム）』に関�
 ---
 
 ## 🎬 プレイ動画  
-https://github.com/user-attachments/assets/9c5993f9-f51c-4ba9-a753-2808321e8e9a  
 
+https://github.com/user-attachments/assets/2d9aee91-485d-40fe-ae91-15e3eb785852
 
+https://github.com/user-attachments/assets/9e402620-06f3-4a73-a32d-03ed0cc0ff24
 
+https://github.com/user-attachments/assets/052271e2-ccd3-4999-afb4-006ac72b88c3  
+
+<br/> 
+
+※ 動画容量の関係で画質を調整している為、一部文字が見えづらい箇所がございます。
 
 <br/>  
 
