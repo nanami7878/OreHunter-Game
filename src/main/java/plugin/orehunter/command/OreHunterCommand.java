@@ -65,7 +65,6 @@ public class OreHunterCommand extends BaseCommand implements Listener {
 
   @Override
   public boolean onExecutePlayerCommand(Player player, Command command, String label, String[] args) {
-    //最初の引数が「list」だったらスコア一覧を表示して処理を終了します。
     if (args.length == 1 && LIST.equals(args[0])) {
       sendPlayerScoreList(player);
       return false;
