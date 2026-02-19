@@ -1,15 +1,105 @@
-# 鉱石採掘ゲーム 🪨⛏️　
- Minecraft Java版で利用できる、スコアアタック型 鉱石採掘ミニゲームのプラグインです。  
+# Javaを用いた鉱石採掘ゲーム 🪨⛏️　 
  <br/>  
  
 ## 💫 はじめに
-このリポジトリは、Java学習者である「なぴ（Xアカウント：[@nap_7878](https://x.com/nap_7878) ）」が作成した  
-Minecraftプラグイン『OreHunter（鉱石採掘ミニゲーム）』に関するものです。  
-デイトラ Javaコースで学んだ内容を活かして開発しました。 
-
-※ ご利用に関するトラブル等につきましては、一切の責任を負いかねますことを予めご了承ください。  
-※ Xの仕様により、未ログインの状態ですと投稿が表示されない場合があります。  
+このリポジトリは、Javaを用いて作成したMinecraftプラグイン『鉱石採掘ゲーム（OreHunter）』に関するものです。  
+Javaでの機能を実装し、制限時間内にランダムで出現する鉱石を採掘し、高得点を目指すゲームとなります。  
+スコアはデータベースに保存されます。
+ 
+※ ご利用に関するトラブル等につきましては、一切の責任を負いかねますことを予めご了承ください。    
 <br/> 
+
+---
+
+## ⚙️ 使用技術・開発環境
+| |技術・環境   |
+|-----|-----|
+| バックエンド |![Java](https://img.shields.io/badge/Java-21-grey.svg?style=plastic&labelColor=red) |
+| アプリケーション |![Minecraft](https://img.shields.io/badge/Minecraft-1.21.5-grey.svg?style=plastic&labelColor=success) |
+| サーバー |![Spigot](https://img.shields.io/badge/Spigot-1.21.5-grey.svg?style=plastic&logo=spigotmc&labelColor=ED8106&logoColor=white) |
+| データベース |![MySQL](https://img.shields.io/badge/MySQL-8.0.43-grey.svg?style=plastic&logo=mysql&labelColor=4479A1&logoColor=white) | 
+| 使用ツール |![MyBatis](https://img.shields.io/badge/MyBatis-3.5.13-grey.svg?style=plastic&labelColor=DD0700)&nbsp;![GitHub](https://img.shields.io/badge/GitHub-black?logo=github)&nbsp;![IntelliJ IDEA](https://img.shields.io/badge/intellij%20IDEA-2025.1.3-grey.svg?style=plastic&logo=intellijidea&labelColor=000000)| 
+ 
+<br/> 
+
+---
+
+## 🎥 制作背景  
+ 
+<br/> 
+
+---
+
+## 🤖 データベースについて
+### ◇ データベースの接続方法
+１. ご自身のローカル環境でMySQLに接続してください。  
+２. 以下のSQLコマンドを順番に実行してください。  
+<br/>  
+
+① データベース作成
+```
+CREATE DATABASE orehunter_game;
+```  
+② データベース選択
+```
+USE orehunter_game;
+```
+③ テーブル作成（Mac か Windows どちらか一方を実行してください）  
+
+######  ＊　Macの場合
+```
+CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score int, registered_at datetime, primary key(id));
+```  
+######  ＊　Windowsの場合
+```
+CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score int, registered_at datetime, primary key(id)) DEFAULT CHARSET=utf8;
+```
+<br/>  
+３. MySQLの接続情報（ url , username , password ）は、ご自身のローカル環境に合わせて「 mybatis-config.xml 」に設定してください。  
+<br/>  
+<br/>  
+<br/>  
+
+### ◇ データベースの構成
+データベース名：orehunter_game  
+テーブル名　　：player_score  
+|カラム名|詳細|
+|---|---|
+|id|主キー（AUTO_INCREMENT）|
+|player_name|プレイヤー名|
+|score|ゲームでの獲得スコア|
+|registered_at|登録日時|  
+<br/>   
+
+
+---
+
+
+## 📖 コマンド一覧
+|コマンド|詳細|
+|---|---|
+|`/orehunter`|ゲーム開始|
+|`/orehunter list`|プレイヤーのスコア履歴表示|  
+<br/>   
+
+
+---
+
+##  📝 工夫した点
+#### ◇ カウントダウンの演出 
+- ゲーム開始時と終了時に５秒間のカウントダウンを表示することで、ゲームのタイミングを把握できるようにしました。
+
+#### ◇ 鉱石の出現パターンと得点設定
+- ランダム配置で時間の経過と共に次々と出現させることで、「反射神経✖️判断力」が求められるスピード感を重視したゲームにしました。
+- 鉱石の中に、マイナスポイントの「石」を混在させることで、プレイヤーのスコアを左右するようゲーム性をもたせました。
+
+#### ◇ ブロック復元処理 
+- 鉱石が出現した場所や、採掘時に誤って破壊してしまったブロックの元の状態を記録しておき、ゲーム終了後に自動で復元される仕組みにしました。
+- プレイヤーは、地形や建物を破壊してしまっても心配することなく、好きな場所でゲームを楽しむことができます。
+  
+#### ◇ 採掘方法の設定 
+- 出現した鉱石は、1回叩くだけで採掘できるように設定し、次々と出現する鉱石をテンポよく採掘できるようにしました。
+<br/>   
 
 ---
 
@@ -103,16 +193,6 @@ https://github.com/user-attachments/assets/052271e2-ccd3-4999-afb4-006ac72b88c3
 
 ---
 
-
-## 📖 コマンド一覧
-|コマンド|詳細|
-|---|---|
-|`/orehunter`|ゲーム開始|
-|`/orehunter list`|プレイヤーのスコア履歴表示|  
-<br/>   
-
----
-
 ## 💎 鉱石別得点一覧
 |鉱石名|ポイント|
 |---|---|
@@ -121,57 +201,6 @@ https://github.com/user-attachments/assets/052271e2-ccd3-4999-afb4-006ac72b88c3
 |レッドストーン鉱石|30 ポイント|
 |鉄鉱石|10 ポイント|
 |石|-50 ポイント|  
-<br/>   
-
----
-
-## 🤖 データベースについて
-### ◇ データベースの接続方法
-１. ご自身のローカル環境でMySQLに接続してください。  
-２. 以下のSQLコマンドを順番に実行してください。  
-<br/>  
-
-① データベース作成
-```
-CREATE DATABASE orehunter_game;
-```  
-② データベース選択
-```
-USE orehunter_game;
-```
-③ テーブル作成（Mac か Windows どちらか一方を実行してください）  
-
-######  ＊　Macの場合
-```
-CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score int, registered_at datetime, primary key(id));
-```  
-######  ＊　Windowsの場合
-```
-CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score int, registered_at datetime, primary key(id)) DEFAULT CHARSET=utf8;
-```
-<br/>  
-３. MySQLの接続情報（ url , username , password ）は、ご自身のローカル環境に合わせて「 mybatis-config.xml 」に設定してください。  
-<br/>  
-<br/>  
-<br/>  
-
-### ◇ データベースの構成
-データベース名：orehunter_game  
-テーブル名　　：player_score  
-|カラム名|詳細|
-|---|---|
-|id|主キー（AUTO_INCREMENT）|
-|player_name|プレイヤー名|
-|score|ゲームでの獲得スコア|
-|registered_at|登録日時|  
-<br/>   
-
----
-
-## ⚙️ 開発環境
-- Java版 Minecraft　1.21.5
-- Java　21.0.7
-- Spigot　1.21.5  
 <br/>   
 
 ---
@@ -185,6 +214,7 @@ CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score
 また、ご意見やお気づきの点がございましたら、お手数ですが Xアカウント（[@nap_7878](https://x.com/nap_7878)）までご連絡いただけましたら幸いです。  
 
 最後までご覧いただきありがとうございました。  
+
 
 
 
