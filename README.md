@@ -1,13 +1,16 @@
-# Javaを用いた鉱石採掘ゲーム 🪨⛏️　 
- <br/>  
+# 鉱石採掘ゲーム 🪨⛏️　 
  
 ## 💫 はじめに
-このリポジトリは、Javaを用いて作成したMinecraftプラグイン『鉱石採掘ゲーム（OreHunter）』に関するものです。  
-Javaでの機能を実装し、制限時間内にランダムで出現する鉱石を採掘し、高得点を目指すゲームとなります。  
+本リポジトリは、Javaを用いて作成したMinecraftプラグイン『鉱石採掘ゲーム（OreHunter）』に関するものです。  
+Javaでの機能を実装し、制限時間内にランダムで出現する鉱石を採掘し、高得点を目指すゲームにしました。  
 スコアはデータベースに保存されます。
  
 ※ ご利用に関するトラブル等につきましては、一切の責任を負いかねますことを予めご了承ください。    
 <br/> 
+
+---
+
+## 🎥 制作背景  
 
 ---
 
@@ -24,13 +27,109 @@ Javaでの機能を実装し、制限時間内にランダムで出現する鉱�
 
 ---
 
-## 🎥 制作背景  
- 
+## 🎬 プレイ動画と実装方法  
+https://github.com/user-attachments/assets/9e402620-06f3-4a73-a32d-03ed0cc0ff24
+
+〈鉱石の出現〉 
+- 5種類の鉱石をリストで定義し、そのリストの中からランダムで１種類 抽選することで、拡張しやすい構成にしました。
+```java
+ private Material getOre() {
+    List<Material> oreList = List.of(Material.DIAMOND_ORE,Material.LAPIS_ORE, Material.REDSTONE_ORE,Material.IRON_ORE,Material.STONE);
+    int random = new SplittableRandom().nextInt(oreList.size());
+    return oreList.get(random);
+  }
+```
+- 出現場所は、プレイヤーを中心として出現範囲の条件が指定されており、その中からランダムで抽選します。<br/>
+抽選した場所が条件に満たない場合は、再抽選を行うことで、ゲームの進行性を保つようにしました。
+```java
+private Block getOreSpawnBlock(Player player) {
+    Location playerLocation = player.getLocation();
+    SplittableRandom random = new SplittableRandom();
+
+    for (int i = 0; i < MAX_SPAWN_ATTEMPTS; i++) {
+      int randomBlockX = random.nextInt(20) - 10;
+      int randomBlockZ = random.nextInt(20) - 10;
+
+      int x = playerLocation.getBlockX() + randomBlockX;
+      int y = playerLocation.getBlockY();
+      int z = playerLocation.getBlockZ() + randomBlockZ;
+
+      Block blockLocation = player.getWorld().getBlockAt(x, y, z);
+
+      if (blockLocation.getType().isAir()
+          && blockLocation.getRelative(BlockFace.DOWN).getType().isSolid()) {
+        return blockLocation;
+      }
+    }
+    return playerLocation.getBlock().getRelative(BlockFace.DOWN,2);
+  }
+```
+<br/>
+
+〈スコア加算〉
+- 出現した鉱石のみをスコア加算対象として判定し、鉱石が破壊(採掘)された瞬間にスコアが加算されるよう実装しました。<br/>
+スコア加算対象の判定方法は、出現した鉱石をリストで管理しておき、そのリストとゲーム中に破壊(採掘)した物が<br/>
+一致するかどうかで判定しています。スコア加算対象を特定することで、ゲーム性を保つよう実装しました。
+```java
+public void oreCrush(BlockBreakEvent e) {
+    Block brokenBlock = e.getBlock();
+    Player player = e.getPlayer();
+
+    if (executingPlayerList.isEmpty()){
+      return;
+    }
+
+　　Location brokenLocation = brokenBlock.getLocation();
+    if (oreBlockList.stream()
+        .noneMatch(ore -> ore.equals(brokenBlock))){
+      brokenBlockTypes.putIfAbsent(brokenLocation, brokenBlock.getType());
+      return;
+    }
+
+    executingPlayerList.stream()
+        .filter(p -> p.getPlayerName().equals(player.getName()))
+        .findFirst()
+        .ifPresent(p -> {
+              OreInfo oreInfo = OreInfo.fromMaterial(brokenBlock.getType());
+              if (oreInfo != null) {
+                p.setScore(p.getScore() + oreInfo.getScore());
+                player.sendMessage(oreInfo.getMessage() + " 現在のスコアは " + p.getScore() + "点！");
+              }
+        });
+    }
+```
+<br/>
+
+〈鉱石ごとの情報管理〉
+- 列挙型(enum)を用いて、鉱石ごとに異なる点数とメッセージを一元管理しています。<br/>
+fromMaterial メソッドにより、Material から対応する鉱石情報を取得できるようにしています。<br/>
+これにより、if文などの条件分岐を増やすことなく、後から情報を追加する場合でも対応しやすく拡張性を持たせた設計にしました。
+```java
+public enum OreInfo {
+  DIAMOND(Material.DIAMOND_ORE, 100, "ダイヤモンド鉱石！"),
+  LAPIS(Material.LAPIS_ORE, 50, "ラピスラズリ鉱石！"),
+  REDSTONE(Material.REDSTONE_ORE, 30, "レッドストーン鉱石！"),
+  IRON(Material.IRON_ORE, 10, "鉄鉱石！"),
+  STONE(Material.STONE, -50, "残念！石は-50点！");
+
+public static OreInfo fromMaterial(Material material) {
+  for (OreInfo oreInfo : values()) {
+    if (oreInfo.getMaterial() == material) {
+      return oreInfo;
+     }
+   }
+   return null;
+ }
+}
+```
 <br/> 
+
+〈鉱石ごとの情報管理(列挙型)〉
+- あ
 
 ---
 
-## 🤖 データベースについて
+## 🤖 データベースについて  
 ### ◇ データベースの接続方法
 １. ご自身のローカル環境でMySQLに接続してください。  
 ２. 以下のSQLコマンドを順番に実行してください。  
@@ -81,7 +180,6 @@ CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score
 |`/orehunter`|ゲーム開始|
 |`/orehunter list`|プレイヤーのスコア履歴表示|  
 <br/>   
-
 
 ---
 
