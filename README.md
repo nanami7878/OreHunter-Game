@@ -28,6 +28,8 @@ Javaでの機能を実装し、制限時間内にランダムで出現する鉱�
 ---
 
 ## 🎬 プレイ動画と実装方法  
+Javaでの機能を実装し、制限時間のカウントと同時に鉱石がランダムで出現する仕様にしました。
+
 https://github.com/user-attachments/assets/9e402620-06f3-4a73-a32d-03ed0cc0ff24
 
 〈鉱石の出現〉 
@@ -39,6 +41,8 @@ https://github.com/user-attachments/assets/9e402620-06f3-4a73-a32d-03ed0cc0ff24
     return oreList.get(random);
   }
 ```
+<br/>  
+
 - 出現場所は、プレイヤーを中心として出現範囲の条件が指定されており、その中からランダムで抽選します。<br/>
 抽選した場所が条件に満たない場合は、再抽選を行うことで、ゲームの進行性を保つようにしました。
 ```java
@@ -66,10 +70,36 @@ private Block getOreSpawnBlock(Player player) {
 ```
 <br/>
 
+
+〈鉱石ごとの情報管理〉
+- 列挙型(enum)を用いて、鉱石ごとに異なる点数とメッセージを一元管理しています。<br/>
+fromMaterial メソッドにより、Material から対応する鉱石情報を取得できるようにしています。<br/>
+これにより、if文などの条件分岐を増やすことなく、後から情報を追加する場合でも対応しやすく拡張性を持たせた設計にしました。
+```java
+public enum OreInfo {
+  DIAMOND(Material.DIAMOND_ORE, 100, "ダイヤモンド鉱石！"),
+  LAPIS(Material.LAPIS_ORE, 50, "ラピスラズリ鉱石！"),
+  REDSTONE(Material.REDSTONE_ORE, 30, "レッドストーン鉱石！"),
+  IRON(Material.IRON_ORE, 10, "鉄鉱石！"),
+  STONE(Material.STONE, -50, "残念！石は-50点！");
+
+public static OreInfo fromMaterial(Material material) {
+  for (OreInfo oreInfo : values()) {
+    if (oreInfo.getMaterial() == material) {
+      return oreInfo;
+     }
+   }
+   return null;
+ }
+}
+```
+<br/> 
+
+
 〈スコア加算〉
 - 出現した鉱石のみをスコア加算対象として判定し、鉱石が破壊(採掘)された瞬間にスコアが加算されるよう実装しました。<br/>
-スコア加算対象の判定方法は、出現した鉱石をリストで管理しておき、そのリストとゲーム中に破壊(採掘)した物が<br/>
-一致するかどうかで判定しています。スコア加算対象を特定することで、ゲーム性を保つよう実装しました。
+スコア加算対象の判定方法は、出現した鉱石をリストで管理しておき、そのリストとゲーム中に破壊(採掘)したブロックが一致するかどうかで判定しています。<br/>
+特定のスコア加算対象にすることで、ゲーム性を保つよう実装しました。なお、リストと一致しないブロックが破壊された場合はスコア加算対象とせず、ゲーム終了後に地形復元として復元できるようにブロック情報を記録します。
 ```java
 public void oreCrush(BlockBreakEvent e) {
     Block brokenBlock = e.getBlock();
@@ -100,34 +130,99 @@ public void oreCrush(BlockBreakEvent e) {
 ```
 <br/>
 
-〈鉱石ごとの情報管理〉
-- 列挙型(enum)を用いて、鉱石ごとに異なる点数とメッセージを一元管理しています。<br/>
-fromMaterial メソッドにより、Material から対応する鉱石情報を取得できるようにしています。<br/>
-これにより、if文などの条件分岐を増やすことなく、後から情報を追加する場合でも対応しやすく拡張性を持たせた設計にしました。
-```java
-public enum OreInfo {
-  DIAMOND(Material.DIAMOND_ORE, 100, "ダイヤモンド鉱石！"),
-  LAPIS(Material.LAPIS_ORE, 50, "ラピスラズリ鉱石！"),
-  REDSTONE(Material.REDSTONE_ORE, 30, "レッドストーン鉱石！"),
-  IRON(Material.IRON_ORE, 10, "鉄鉱石！"),
-  STONE(Material.STONE, -50, "残念！石は-50点！");
 
-public static OreInfo fromMaterial(Material material) {
-  for (OreInfo oreInfo : values()) {
-    if (oreInfo.getMaterial() == material) {
-      return oreInfo;
-     }
-   }
-   return null;
- }
+〈地形復元〉
+- スコア加算対象外のブロックが破壊された場合、破壊されたブロックの位置とその位置に元々あったブロックの種類を<br/>
+Map<Location, Material>で記録します。ゲーム終了後に、出現した鉱石を削除した上で、記録しておいた情報をもとに各ブロックを元の状態へ戻すことで、ゲーム開始前の地形を保つ設計としました。
+```java
+Location brokenLocation = brokenBlock.getLocation();
+    if (oreBlockList.stream()
+        .noneMatch(ore -> ore.equals(brokenBlock))){
+      brokenBlockTypes.putIfAbsent(brokenLocation, brokenBlock.getType());
+      return;
+    }
+
+
+oreBlockList.forEach(oreBlock
+        -> oreBlock.setType(Material.AIR));
+    oreBlockList.clear();
+
+brokenBlockTypes.forEach((restoreLocation, originalBlock)
+        -> restoreLocation.getBlock().setType(originalBlock));
+    brokenBlockTypes.clear();
+```
+<br/>
+
+
+〈時間管理〉  
+ゲームの進行は、スケジューラーを用いて「開始前カウントダウン」「ゲーム本編（制限時間管理）」「終了処理」の3段階に分けて管理しています。
+メソッド抽出を行い、各段階の責務を明確に分けて処理することで、処理の見通しを良くし拡張や修正を行いやすい構成にしました。
+- 開始前カウントダウン
+```java
+private void startGameCountdown(Player player, ExecutingPlayer nowExecutingPlayer) {
+    Bukkit.getScheduler().runTaskTimer(main, task -> {
+      if (nowExecutingPlayer.getCountdownTime() > 0) {
+        player.sendTitle(String.valueOf(nowExecutingPlayer.getCountdownTime()),
+            "鉱石をたくさん採掘し高得点を目指そう！", 0, STAY_TIME, 0);
+        nowExecutingPlayer.setCountdownTime(nowExecutingPlayer.getCountdownTime() -1);
+        return;
+      }
+
+      if (nowExecutingPlayer.getCountdownTime() == 0) {
+        player.sendTitle("START！",
+            "鉱石をたくさん採掘し高得点を目指そう！", 0, STAY_TIME, FADE_OUT_TIME);
+        nowExecutingPlayer.setCountdownTime(nowExecutingPlayer.getCountdownTime() - 1);
+
+        gamePlay(player, nowExecutingPlayer);
+        task.cancel();
+      }
+    }, 0, 20);
+  }
+```
+- ゲーム本編(制限時間管理)
+```java
+private void gamePlay(Player player, ExecutingPlayer nowExecutingPlayer) {
+    Bukkit.getScheduler().runTaskTimer(main, task -> {
+      if (nowExecutingPlayer.getGameTime() <= 0) {
+        finishGame(player, nowExecutingPlayer, task);
+        return;
+      }
+
+      if (nowExecutingPlayer.getGameTime() <= COUNTDOWN_TIME) {
+        player.sendTitle(String.valueOf(nowExecutingPlayer.getGameTime()),
+            "", 0, STAY_TIME, 0);
+      }
+
+      oreSpawn(player);
+
+      nowExecutingPlayer.setGameTime(nowExecutingPlayer.getGameTime() - 1);
+
+    }, 0, 20);
+  }
+```
+- 終了処理
+```java
+private void finishGame(Player player, ExecutingPlayer nowExecutingPlayer, BukkitTask task) {
+    task.cancel();
+    player.sendTitle("ゲーム終了！",
+        nowExecutingPlayer.getPlayerName() + "合計 " + nowExecutingPlayer.getScore() + "点！",
+        0, STAY_LONG_TIME, FADE_OUT_TIME);
 }
 ```
-<br/> 
-
-〈鉱石ごとの情報管理(列挙型)〉
-- あ
 
 ---
+
+## 🤖 スコア確認動画とデータベースについて  
+スコアはデータベースに保存されます。<br/>
+コマンドで`/orehunter list`を実行することで、データベースに保存された過去のスコア履歴を確認することができます。
+
+【ゲーム開始前のスコア確認動画】<br/>
+
+https://github.com/user-attachments/assets/2d9aee91-485d-40fe-ae91-15e3eb785852
+
+【ゲーム終了後のスコア確認動画】<br/>
+
+https://github.com/user-attachments/assets/052271e2-ccd3-4999-afb4-006ac72b88c3 
 
 ## 🤖 データベースについて  
 ### ◇ データベースの接続方法
