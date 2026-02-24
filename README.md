@@ -2,15 +2,15 @@
  
 ## 💫 はじめに
 本リポジトリは、Javaを用いて作成したMinecraftプラグイン『鉱石採掘ゲーム（OreHunter）』に関するものです。  
-Javaでの機能を実装し、制限時間内にランダムで出現する鉱石を採掘し、高得点を目指すゲームにしました。  
-スコアはデータベースに保存されます。
- 
-※ ご利用に関するトラブル等につきましては、一切の責任を負いかねますことを予めご了承ください。    
+ご利用に関するトラブル等につきましては、一切の責任を負いかねますことを予めご了承ください。  
 <br/> 
 
 ---
 
 ## 🎥 制作背景  
+Javaおよびデータベースを用いたバックエンド処理を実践的に学ぶため、処理結果が即座に画面へ反映され、確認しやすいMinecraftプラグインを選定しました。
+Spigot APIを用い、ゲーム内イベントを起点としたスコア加算処理や、データベースへの保存機能を設計・実装しています。
+<br/> 
 
 ---
 
@@ -155,9 +155,9 @@ brokenBlockTypes.forEach((restoreLocation, originalBlock)
 
 
 〈時間管理〉  
-ゲームの進行は、スケジューラーを用いて「開始前カウントダウン」「ゲーム本編（制限時間管理）」「終了処理」の3段階に分けて管理しています。
+ゲームの進行は、スケジューラーを用いて「ゲーム開始前カウントダウン」「ゲーム本編（制限時間管理）」「終了処理」の3段階に分けて管理しています。
 メソッド抽出を行い、各段階の責務を明確に分けて処理することで、処理の見通しを良くし拡張や修正を行いやすい構成にしました。
-- 開始前カウントダウン
+- ゲーム開始前カウントダウン
 ```java
 private void startGameCountdown(Player player, ExecutingPlayer nowExecutingPlayer) {
     Bukkit.getScheduler().runTaskTimer(main, task -> {
@@ -209,6 +209,7 @@ private void finishGame(Player player, ExecutingPlayer nowExecutingPlayer, Bukki
         0, STAY_LONG_TIME, FADE_OUT_TIME);
 }
 ```
+<br/>   
 
 ---
 
@@ -220,11 +221,91 @@ private void finishGame(Player player, ExecutingPlayer nowExecutingPlayer, Bukki
 
 https://github.com/user-attachments/assets/2d9aee91-485d-40fe-ae91-15e3eb785852
 
+※ 動画容量の関係で画質を調整している為、一部文字が見えづらい箇所がございます。<br/>
+<br/>
 【ゲーム終了後のスコア確認動画】<br/>
 
 https://github.com/user-attachments/assets/052271e2-ccd3-4999-afb4-006ac72b88c3 
 
-## 🤖 データベースについて  
+<br/>  
+
+### ◇ データベースの構成  
+データベース名：orehunter_game  
+テーブル名　　：player_score  
+|カラム名|詳細|
+|---|---|
+|id|主キー（AUTO_INCREMENT）|
+|player_name|プレイヤー名|
+|score|ゲームでの獲得スコア|
+|registered_at|登録日時|  
+<br/>
+
+### ◇ データベースの処理の流れ
+```mermaid
+flowchart TD
+    A[ゲーム終了処理] --> B[① PlayerScore<br>【エンティティ生成】]
+    B --> C[② PlayerScoreData<br>【取得・登録処理】]
+    C --> D[③ PlayerScoreMapper<br>【SQL実行】]
+    D --> E[player_score<br>【スコア情報を保存】]
+```
+
+#### ① Entity：PlayerScore<br/> 
+プレイヤーのスコア情報をまとめて扱うためのデータクラスです。
+```java
+@Getter
+@Setter
+@NoArgsConstructor
+public class PlayerScore {
+
+  private int id;
+  private String playerName;
+  private int score;
+  private LocalDateTime registeredAt;
+
+  public PlayerScore(String playerName, int score){
+    this.playerName = playerName;
+    this.score = score;
+  }
+}
+```
+
+<br/>
+
+#### ② Dataクラス：PlayerScoreData<br/> 
+PlayerScore をデータベースから取得・登録するための処理をまとめたクラスです。
+```java
+public class PlayerScoreData {
+
+  private final PlayerScoreMapper mapper;
+
+  public List<PlayerScore> selectList() {
+    return mapper.selectList();
+  }
+
+  public void insert(PlayerScore playerScore) {
+    mapper.insert(playerScore);
+  }
+}
+```
+
+<br/>
+
+#### ③ Mapper：PlayerScoreMapper<br/> 
+PlayerScoreに関するSQLを定義し、実行するMapperインターフェースです。
+```java
+public interface PlayerScoreMapper {
+
+  @Select("select * from player_score")
+  List <PlayerScore> selectList();
+
+  @Insert(
+      "insert player_score(player_name, score, registered_at) values( #{playerName}, #{score}, now() )")
+  int insert(PlayerScore playerScore);
+}
+```
+
+<br/>
+
 ### ◇ データベースの接続方法
 １. ご自身のローカル環境でMySQLに接続してください。  
 ２. 以下のSQLコマンドを順番に実行してください。  
@@ -253,45 +334,15 @@ CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score
 <br/>  
 <br/>  
 <br/>  
-
-### ◇ データベースの構成
-データベース名：orehunter_game  
-テーブル名　　：player_score  
-|カラム名|詳細|
-|---|---|
-|id|主キー（AUTO_INCREMENT）|
-|player_name|プレイヤー名|
-|score|ゲームでの獲得スコア|
-|registered_at|登録日時|  
-<br/>   
-
+ 
 
 ---
-
 
 ## 📖 コマンド一覧
 |コマンド|詳細|
 |---|---|
 |`/orehunter`|ゲーム開始|
 |`/orehunter list`|プレイヤーのスコア履歴表示|  
-<br/>   
-
----
-
-##  📝 工夫した点
-#### ◇ カウントダウンの演出 
-- ゲーム開始時と終了時に５秒間のカウントダウンを表示することで、ゲームのタイミングを把握できるようにしました。
-
-#### ◇ 鉱石の出現パターンと得点設定
-- ランダム配置で時間の経過と共に次々と出現させることで、「反射神経✖️判断力」が求められるスピード感を重視したゲームにしました。
-- 鉱石の中に、マイナスポイントの「石」を混在させることで、プレイヤーのスコアを左右するようゲーム性をもたせました。
-
-#### ◇ ブロック復元処理 
-- 鉱石が出現した場所や、採掘時に誤って破壊してしまったブロックの元の状態を記録しておき、ゲーム終了後に自動で復元される仕組みにしました。
-- プレイヤーは、地形や建物を破壊してしまっても心配することなく、好きな場所でゲームを楽しむことができます。
-  
-#### ◇ 採掘方法の設定 
-- 出現した鉱石は、1回叩くだけで採掘できるように設定し、次々と出現する鉱石をテンポよく採掘できるようにしました。
 <br/>   
 
 ---
@@ -311,23 +362,6 @@ CREATE TABLE player_score(id int auto_increment, player_name varchar(100), score
 <br/>  
 
 ---
-
-## 🎬 プレイ動画  
-
-https://github.com/user-attachments/assets/2d9aee91-485d-40fe-ae91-15e3eb785852
-
-https://github.com/user-attachments/assets/9e402620-06f3-4a73-a32d-03ed0cc0ff24
-
-https://github.com/user-attachments/assets/052271e2-ccd3-4999-afb4-006ac72b88c3  
-
-<br/> 
-
-※ 動画容量の関係で画質を調整している為、一部文字が見えづらい箇所がございます。
-
-<br/>  
-
----
-
 
 ## 🎮 ゲーム詳細
 ### ◇ ゲーム開始の準備  
@@ -364,24 +398,6 @@ https://github.com/user-attachments/assets/052271e2-ccd3-4999-afb4-006ac72b88c3
 - コマンドで`/orehunter list`と入力することで確認できます。
 
 　※ 誤ったコマンド引数を入力した場合、「 実行できません。コマンド引数を正しく入力する必要があります。[list] 」と表示されます。    
-<br/>   
-
----
-
-##  📝 工夫した点
-#### ◇ カウントダウンの演出 
-- ゲーム開始時と終了時に５秒間のカウントダウンを表示することで、ゲームのタイミングを把握できるようにしました。
-
-#### ◇ 鉱石の出現パターンと得点設定
-- ランダム配置で時間の経過と共に次々と出現させることで、「反射神経✖️判断力」が求められるスピード感を重視したゲームにしました。
-- 鉱石の中に、マイナスポイントの「石」を混在させることで、プレイヤーのスコアを左右するようゲーム性をもたせました。
-
-#### ◇ ブロック復元処理 
-- 鉱石が出現した場所や、採掘時に誤って破壊してしまったブロックの元の状態を記録しておき、ゲーム終了後に自動で復元される仕組みにしました。
-- プレイヤーは、地形や建物を破壊してしまっても心配することなく、好きな場所でゲームを楽しむことができます。
-  
-#### ◇ 採掘方法の設定 
-- 出現した鉱石は、1回叩くだけで採掘できるように設定し、次々と出現する鉱石をテンポよく採掘できるようにしました。
 <br/>   
 
 ---
